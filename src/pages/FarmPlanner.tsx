@@ -1282,15 +1282,19 @@ interface PhaseInfo {
   tips: string[];
 }
 
-const FarmPlanner = () => {
-  const [selectedState, setSelectedState] = useState("");
+interface FarmPlannerProps {
+  location: { state: string; district: string };
+  onLocationChange: (location: { state: string; district: string }) => void;
+}
+
+const FarmPlanner = ({ location, onLocationChange }: FarmPlannerProps) => {
   const [selectedSeason, setSelectedSeason] = useState("");
   const [selectedIrrigation, setSelectedIrrigation] = useState("");
   const [landArea, setLandArea] = useState<number>(1);
   const [selectedCrop, setSelectedCrop] = useState<Crop | null>(null);
   const [showTimeline, setShowTimeline] = useState(false);
 
-  const recommendedCrops = getRecommendedCrops(selectedState, selectedSeason, selectedIrrigation);
+  const recommendedCrops = getRecommendedCrops(location.state, selectedSeason, selectedIrrigation);
 
   const handleCropSelect = (crop: Crop) => {
     setSelectedCrop(crop);
@@ -1306,14 +1310,28 @@ const FarmPlanner = () => {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
           <select
-            value={selectedState}
-            onChange={(e) => setSelectedState(e.target.value)}
+            value={location.state}
+            onChange={(e) => onLocationChange({ ...location, state: e.target.value, district: stateDistricts[e.target.value][0] })}
             className="w-full p-2 border rounded-md"
           >
-            <option value="">Select State</option>
-            {indianStates.map((state) => (
+            {Object.keys(stateDistricts).map((state) => (
               <option key={state} value={state}>
                 {state}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">District</label>
+          <select
+            value={location.district}
+            onChange={(e) => onLocationChange({ ...location, district: e.target.value })}
+            className="w-full p-2 border rounded-md"
+          >
+            {stateDistricts[location.state]?.map((district) => (
+              <option key={district} value={district}>
+                {district}
               </option>
             ))}
           </select>

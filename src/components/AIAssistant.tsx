@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Send, RefreshCw, Search, Download } from "lucide-react";
+import { MessageSquare, Send, RefreshCw, Search, Download, MapPin } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { fetchAIResponse } from "../lib/ai-assistant-api";
 import { useWeather } from "../context/WeatherContext";
@@ -27,7 +27,17 @@ interface Message {
 
 const LOCAL_STORAGE_KEY = "ai-assistant-messages";
 
-export function AIAssistant() {
+interface AIAssistantProps {
+  location: { state: string; district: string };
+  onLocationChange: (location: { state: string; district: string }) => void;
+}
+
+interface AIRequestPayload {
+  messages: { role: string; content: string; }[];
+  context?: string;
+}
+
+export function AIAssistant({ location, onLocationChange }: AIAssistantProps) {
   // On mount, try to load messages from localStorage
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem(LOCAL_STORAGE_KEY) : null;
@@ -87,9 +97,13 @@ export function AIAssistant() {
     try {
       const context = weather && weather.main
         ? `Current weather: ${Math.round(weather.main.temp)}°C, ${weather.weather?.[0]?.main}, Humidity: ${weather.main.humidity}%.`
-        : "";
-      const aiText = await fetchAIResponse({ message: msg.text, context });
-      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: aiText, error: false } : m));
+        : `Location: ${location.state}, ${location.district}`;
+      const payload: AIRequestPayload = {
+        messages: [{ role: 'user', content: msg.text }],
+        context
+      };
+      const response = await fetchAIResponse(payload);
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: response, error: false } : m));
     } catch {
       setErrorId(msg.id);
       setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, error: true } : m));
@@ -99,42 +113,42 @@ export function AIAssistant() {
   };
 
   // Send message
-  const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
-    const userMessage: Message = {
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim()) return;
+
+    const newMessage: Message = {
       id: uuidv4(),
-      text: inputText,
+      text: content,
       sender: 'user',
       timestamp: new Date(),
     };
-    setMessages(prev => [...prev, userMessage]);
-    setLoading(true);
+
+    setMessages((prev) => [...prev, newMessage]);
     setInputText("");
-    let context = "";
-    if (weather && weather.main) {
-      context = `Current weather: ${Math.round(weather.main.temp)}°C, ${weather.weather?.[0]?.main}, Humidity: ${weather.main.humidity}%.`;
-    }
-    const apiMessages = messages.map(m => ({
-      role: m.sender === 'user' ? 'user' : 'assistant',
-      content: m.text
-    }));
-    apiMessages.push({ role: 'user', content: inputText });
-    const limitedMessages = apiMessages.slice(-20); // last 20 messages
-    console.log('Sending to AI API:', limitedMessages);
+
+    // Simulate AI response
+    const payload: AIRequestPayload = {
+      messages: [...messages, newMessage].map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text
+      })),
+      context: `Location: ${location.state}, ${location.district}`
+    };
+
     try {
-      const aiText = await fetchAIResponse({ messages: limitedMessages, context });
+      const response = await fetchAIResponse(payload);
       const aiResponse: Message = {
         id: uuidv4(),
-        text: aiText,
+        text: response,
         sender: 'ai',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiResponse]);
     } catch (err) {
       console.error('AI API error:', err);
-      setErrorId(userMessage.id);
+      setErrorId(newMessage.id);
       setMessages(prev => [...prev, {
-        id: userMessage.id,
+        id: newMessage.id,
         text: "Sorry, I couldn't process your request.",
         sender: 'ai',
         timestamp: new Date(),
@@ -150,7 +164,7 @@ export function AIAssistant() {
     if (e.key === 'Enter' && !loading) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        handleSendMessage();
+        handleSendMessage(inputText);
       }, 300);
     }
   };
@@ -226,7 +240,10 @@ export function AIAssistant() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">AI Farming Assistant</h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-2">Get instant answers to your farming questions</p>
+            <p className="text-gray-600 dark:text-gray-300 mt-2 flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              {location.state}, {location.district}
+            </p>
           </div>
           <div className="flex gap-2">
             <TooltipProvider>
@@ -350,7 +367,7 @@ export function AIAssistant() {
                   aria-label="Type your message"
                 />
                 <Button
-                  onClick={handleSendMessage}
+                  onClick={() => handleSendMessage(inputText)}
                   className="bg-green-600 hover:bg-green-700"
                   disabled={loading}
                   aria-label="Send message"

@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -7,10 +6,16 @@ import {
   CheckCircle, 
   TrendingUp,
   Camera,
-  BarChart3
+  BarChart3,
+  MapPin
 } from "lucide-react";
 
-export function CropHealth() {
+interface CropHealthProps {
+  location: { state: string; district: string };
+  onLocationChange: (location: { state: string; district: string }) => void;
+}
+
+export function CropHealth({ location, onLocationChange }: CropHealthProps) {
   const healthScores = [
     { crop: "Rice Field A", score: 85, status: "Healthy", color: "text-green-600" },
     { crop: "Wheat Field B", score: 72, status: "Good", color: "text-blue-600" },
@@ -48,8 +53,11 @@ export function CropHealth() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Crop Health Monitoring</h1>
-          <p className="text-gray-600 mt-2">AI-powered crop analysis and health assessment</p>
+          <h1 className="text-3xl font-bold text-gray-900">Crop Health Monitor</h1>
+          <p className="text-gray-600 mt-2 flex items-center gap-2">
+            <MapPin className="w-4 h-4" />
+            {location.state}, {location.district}
+          </p>
         </div>
         <div className="flex gap-2">
           <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">

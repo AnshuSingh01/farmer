@@ -32,7 +32,7 @@ const Index = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard location={globalLocation} onLocationChange={setGlobalLocation} />;
       case 'weather':
         return <WeatherWidget location={globalLocation} onLocationChange={setGlobalLocation} />;
       case 'crop-health':
@@ -42,7 +42,7 @@ const Index = () => {
       case 'market-prices':
         return <MarketPrices location={globalLocation} onLocationChange={setGlobalLocation} />;
       case 'farm-planner':
-        return <FarmPlanner />;
+        return <FarmPlanner location={globalLocation} onLocationChange={setGlobalLocation} />;
       default:
         return <Dashboard />;
     }

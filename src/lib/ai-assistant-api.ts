@@ -1,5 +1,5 @@
 export async function fetchAIResponse({ messages, context }: { messages: {role: string, content: string}[], context?: string }) {
-  const apiKey = "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";
+  const apiKey = "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";
   const systemPrompt = context
     ? `You are SmartFarm AI, an expert digital assistant for Indian farmers using a smart farming dashboard. Always use the following context to answer user queries: ${context}.
 
@@ -46,4 +46,4 @@ Guidelines:
   if (!res.ok) throw new Error("Failed to fetch AI response");
   const data = await res.json();
   return data.choices?.[0]?.message?.content || "Sorry, I couldn't process your request.";
-} 
+}

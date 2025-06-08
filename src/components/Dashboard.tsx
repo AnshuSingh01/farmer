@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, RefreshCw, Bell, Edit2, Droplet, CloudRain, Sun, Info, MapPin, AlertTriangle, Sprout, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw, Bell, Edit2, Droplet, CloudRain, Sun, Info, MapPin, AlertTriangle, Sprout, Plus, Wind, Eye, Gauge } from "lucide-react";
 import { LocationSelector } from "@/components/LocationSelector";
+import { useWeather } from "../context/WeatherContext";
 
 const borderColor = {
   urgent: "border-red-400",
@@ -285,9 +286,59 @@ function getAlerts(location) {
   ];
 }
 
-export default function Dashboard() {
+interface DashboardProps {
+  location: { state: string; district: string };
+  onLocationChange: (location: { state: string; district: string }) => void;
+}
+
+export default function Dashboard({ location, onLocationChange }: DashboardProps) {
   const [expanded, setExpanded] = useState(null);
-  const [location, setLocation] = useState(defaultLocation);
+  const { weather, forecast, loading, error } = useWeather();
+
+  // Fallback if no live weather
+  const displayWeather = weather && weather.main ? {
+    location: `${weather.name}, ${weather.sys?.country || "IN"}`,
+    temperature: Math.round(weather.main.temp),
+    feelsLike: Math.round(weather.main.feels_like),
+    condition: weather.weather?.[0]?.main || "-",
+    humidity: weather.main.humidity,
+    windSpeed: weather.wind.speed,
+    visibility: weather.visibility ? Math.round(weather.visibility / 1000) : '-',
+    pressure: weather.main.pressure,
+    icon: weather.weather?.[0]?.icon || "01d",
+    sunrise: weather.sys?.sunrise ? new Date(weather.sys.sunrise * 1000).toLocaleTimeString() : '-',
+    sunset: weather.sys?.sunset ? new Date(weather.sys.sunset * 1000).toLocaleTimeString() : '-',
+  } : {
+    location: `${location.district}, ${location.state}`,
+    temperature: 28,
+    feelsLike: 30,
+    condition: "Partly Cloudy",
+    humidity: 65,
+    windSpeed: 12,
+    visibility: 10,
+    pressure: 1013,
+    icon: "02d",
+    sunrise: "6:00 AM",
+    sunset: "6:45 PM",
+  };
+
+  // Mini 5-day forecast
+  const displayForecast = forecast && forecast.length > 0
+    ? forecast.filter((_, i) => i % 8 === 0).slice(0, 5).map((item, idx) => ({
+        day: idx === 0 ? "Today" : new Date(item.dt_txt).toLocaleDateString(undefined, { weekday: 'long' }),
+        high: Math.round(item.main.temp_max),
+        low: Math.round(item.main.temp_min),
+        condition: item.weather?.[0]?.main || "-",
+        icon: item.weather?.[0]?.icon || "02d",
+      }))
+    : [
+        { day: "Today", high: 30, low: 22, condition: "Partly Cloudy", icon: "02d" },
+        { day: "Tomorrow", high: 32, low: 24, condition: "Sunny", icon: "01d" },
+        { day: "Saturday", high: 29, low: 21, condition: "Light Rain", icon: "10d" },
+        { day: "Sunday", high: 27, low: 20, condition: "Cloudy", icon: "03d" },
+        { day: "Monday", high: 31, low: 23, condition: "Sunny", icon: "01d" },
+      ];
+
   const todayWeather = getWeatherForLocation(location);
   const farmAdvice = getFarmAdvice(location);
   const alerts = getAlerts(location);
@@ -299,34 +350,44 @@ export default function Dashboard() {
         <div className="absolute bottom-0 right-0 w-[40vw] h-[30vh] bg-blue-200 opacity-20 rounded-full blur-2xl" />
       </div>
       <div className="relative z-10 max-w-6xl mx-auto px-4 space-y-12">
-        {/* Location Selector */}
-        <div className="flex justify-center">
-          <div className="w-full max-w-md">
-            <LocationSelector currentLocation={location} onLocationChange={setLocation} />
-          </div>
-        </div>
-
-        {/* Weather Alert */}
+        {/* Weather Section (Enhanced) */}
         <section>
           <h2 className="flex items-center gap-2 text-2xl font-extrabold mb-3 text-blue-900 tracking-tight drop-shadow-sm">
-            <CloudRain className="w-7 h-7 text-blue-400" /> Weather Alert
+            <CloudRain className="w-7 h-7 text-blue-400" /> Weather
           </h2>
-          <div className={`rounded-2xl shadow-xl bg-gradient-to-br from-blue-50 to-green-50 border-l-8 ${todayWeather.alert ? (todayWeather.alert.type === 'urgent' ? 'border-red-400' : 'border-yellow-400') : 'border-blue-400'} p-6 flex flex-col md:flex-row md:items-center gap-4 transition-all duration-300`}>
+          {loading && <div className="text-blue-600">Loading live weather data...</div>}
+          {error && <div className="text-red-600">{error}</div>}
+          <div className="rounded-2xl shadow-xl bg-gradient-to-br from-blue-50 to-green-50 border-l-8 border-blue-400 p-6 flex flex-col md:flex-row md:items-center gap-4 transition-all duration-300">
             <div className="flex items-center gap-4">
               <MapPin className="w-6 h-6 text-green-700" />
-              <span className="font-semibold text-lg text-green-900">{location.district}, {location.state}</span>
+              <span className="font-semibold text-lg text-green-900">{displayWeather.location}</span>
             </div>
             <div className="flex items-center gap-3 ml-0 md:ml-8">
-              {todayWeather.icon}
-              <span className="text-2xl font-bold text-blue-700 drop-shadow-sm">{todayWeather.temp}°C</span>
-              <span className="text-gray-700 font-medium">{todayWeather.summary}</span>
+              <img src={`https://openweathermap.org/img/wn/${displayWeather.icon}@2x.png`} alt="icon" className="w-12 h-12" />
+              <span className="text-2xl font-bold text-blue-700 drop-shadow-sm">{displayWeather.temperature}°C</span>
+              <span className="text-gray-700 font-medium">{displayWeather.condition}</span>
+              <span className="text-gray-500 ml-4">Feels like {displayWeather.feelsLike}°C</span>
             </div>
-            {todayWeather.alert && (
-              <div className={`flex items-center gap-2 ml-0 md:ml-auto px-3 py-2 rounded-xl ${todayWeather.alert.type === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'} font-semibold shadow-sm`}>
-                <AlertTriangle className="w-5 h-5" />
-                <span>{todayWeather.alert.message}</span>
+            <div className="flex flex-col gap-1 ml-0 md:ml-auto">
+              <span>Humidity: <b>{displayWeather.humidity}%</b></span>
+              <span>Wind: <b>{displayWeather.windSpeed} km/h</b></span>
+              <span>Visibility: <b>{displayWeather.visibility} km</b></span>
+              <span>Pressure: <b>{displayWeather.pressure} hPa</b></span>
+              <span>Sunrise: <b>{displayWeather.sunrise}</b></span>
+              <span>Sunset: <b>{displayWeather.sunset}</b></span>
+            </div>
+          </div>
+          {/* Mini 5-day forecast */}
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4">
+            {displayForecast.map((day, idx) => (
+              <div key={idx} className="bg-white rounded-xl shadow p-3 flex flex-col items-center">
+                <span className="font-semibold">{day.day}</span>
+                <img src={`https://openweathermap.org/img/wn/${day.icon}.png`} alt="icon" className="w-8 h-8" />
+                <span className="text-blue-700 font-bold">{day.high}°C</span>
+                <span className="text-gray-500 text-sm">{day.low}°C</span>
+                <span className="text-xs text-gray-600">{day.condition}</span>
               </div>
-            )}
+            ))}
           </div>
         </section>
 

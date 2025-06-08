@@ -18,6 +18,8 @@ import {
   Title,
   Tooltip,
   Legend,
+  ChartData,
+  ChartOptions
 } from 'chart.js';
 import { useState } from 'react';
 
@@ -32,7 +34,12 @@ ChartJS.register(
   Legend
 );
 
-export function MarketPrices() {
+interface MarketPricesProps {
+  location: { state: string; district: string };
+  onLocationChange: (location: { state: string; district: string }) => void;
+}
+
+export function MarketPrices({ location, onLocationChange }: MarketPricesProps) {
   const cropPrices = [
     {
       crop: "Rice",
@@ -188,11 +195,10 @@ export function MarketPrices() {
   const maxPrice = Math.max(...prices);
   const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
 
-  const chartData = {
+  const chartData: ChartData<'bar'> = {
     labels: priceHistory[selectedCrop].map((d) => d.date),
     datasets: [
       {
-        type: 'bar',
         label: `${selectedCrop} Price (₹)`,
         data: prices,
         backgroundColor: '#3b82f6',
@@ -201,22 +207,21 @@ export function MarketPrices() {
         categoryPercentage: 0.7,
       },
       {
-        type: 'line',
         label: 'Avg Price',
         data: prices.map(() => avgPrice),
-        borderColor: '#f59e42',
-        borderWidth: 2,
-        fill: false,
-        pointRadius: 0,
-        tension: 0.3,
-      },
+        backgroundColor: '#f59e42',
+        borderRadius: 0,
+        barPercentage: 0.1,
+        categoryPercentage: 0.1,
+        type: 'bar' as const,
+      }
     ],
   };
 
-  const chartOptions = {
+  const chartOptions: ChartOptions<'bar'> = {
     responsive: true,
     plugins: {
-      legend: { display: true, position: 'top' },
+      legend: { display: true, position: 'top' as const },
       title: { display: true, text: `${selectedCrop} Price Trend (Last 5 Weeks)` },
       tooltip: {
         mode: 'index',
@@ -254,7 +259,7 @@ export function MarketPrices() {
           <h1 className="text-3xl font-bold text-gray-900">Market Prices</h1>
           <p className="text-gray-600 mt-2 flex items-center gap-2">
             <MapPin className="w-4 h-4" />
-            Karnataka Markets • Live Prices
+            {location.state} Markets • Live Prices
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-500">
