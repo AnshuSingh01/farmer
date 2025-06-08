@@ -8,10 +8,11 @@ import { MarketPrices } from "@/components/MarketPrices";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { WeatherProvider } from "../context/WeatherContext";
 import FarmPlanner from "./FarmPlanner";
+import aiLogo from "@/assets/logo-new.png";
 
 export type ViewType = 'dashboard' | 'weather' | 'crop-health' | 'ai-assistant' | 'market-prices' | 'farm-planner';
 
-const LOCAL_VIEW_KEY = "smartfarm-current-view";
+const LOCAL_VIEW_KEY = "krishimitra-current-view";
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<ViewType>(() => {
@@ -58,7 +59,19 @@ const Index = () => {
             currentLocation={globalLocation}
             onLocationChange={setGlobalLocation}
           />
-          <main className="flex-1 p-8 overflow-y-auto">
+          <main className="flex-1 p-8 overflow-y-auto relative">
+            {/* Sticky Header Bar with AI Icon */}
+            <div className="sticky top-0 z-40 bg-white/90 backdrop-blur flex items-center justify-between px-6 py-2 mb-6 shadow-sm rounded-b-xl">
+              <div className="font-bold text-xl text-green-700">KrishiMitra</div>
+              <button
+                className="bg-white border border-green-300 hover:border-green-500 rounded-full shadow-lg p-1 flex items-center justify-center transition-all duration-200"
+                style={{ boxShadow: '0 2px 8px rgba(34,197,94,0.15)' }}
+                onClick={() => setCurrentView('ai-assistant')}
+                title="Go to AI Assistant"
+              >
+                <img src={aiLogo} alt="AI Assistant" className="w-10 h-10 object-contain" />
+              </button>
+            </div>
             <div className="max-w-7xl mx-auto">
               <div className="animate-fade-in">
                 {renderContent()}

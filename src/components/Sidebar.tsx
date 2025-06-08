@@ -75,7 +75,7 @@ export function Sidebar({ currentView, onViewChange, currentLocation, onLocation
         <div className="flex items-center justify-center h-24">
           <img 
             src={krishimitraLogo} 
-            alt="Krishimitra Logo" 
+            alt="KrishiMitra Logo" 
             className="h-20 w-auto object-contain hover:scale-105 transition-all duration-300" 
           />
         </div>
